@@ -1,24 +1,31 @@
 import socket
 
+HEADER = 64
 PORT = 5500
-HEADERSIZE = 10
+FORMAT = "utf-8"
+DISCONNECT_MESSAGE = "!disconnect"
+DISCONNECT_CONFIRM = "[SERVER]: Byl jste odpojen."
+SERVER = socket.gethostbyname(socket.gethostname())
+ADDR = (SERVER, PORT)
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((socket.gethostname(), PORT))
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect(ADDR)
 
-full_msg = ""
-new_msg = True
-while True:
-    msg = s.recv(1024)
-    if new_msg:
-        print(f"Délka zprávy: {msg[:HEADERSIZE]}")
-        msglen = int(msg[:HEADERSIZE])
-        new_msg = False
+connected = True
 
-    full_msg += msg.decode("utf-8")
 
-    if len(full_msg) - HEADERSIZE == msglen:
-        print("Celá zpráva přijata.")
-        print(full_msg[HEADERSIZE:])
-        new_msg = True
-        full_msg = ""
+def send(msg):
+    message = msg.encode(FORMAT)
+    msg_length = len(message)
+    send_length = str(msg_length).encode(FORMAT)
+    send_length += b" " * (HEADER - len(send_length))
+    client.send(send_length)
+    client.send(message)
+    msg_back = client.recv(2048).decode(FORMAT)
+    print(msg_back)
+    if msg_back == DISCONNECT_CONFIRM:
+        exit()
+
+
+while connected:
+    send(input("Input: "))
